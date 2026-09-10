@@ -1145,7 +1145,7 @@
           <!-- <span class="brand-mark">CR</span> -->
           <span class="brand-name">CivicReport</span>
         </div>
-        <p class="lede auth-lede">
+        <p class="lede auth-lede" id="authLede">
           Sign in to report an issue or manage the municipal queue.
         </p>
 
@@ -1268,6 +1268,7 @@
           <!-- <span class="brand-mark">CR</span> -->
           <span class="brand-name">CivicReport</span>
           <span class="brand-sub">demo</span>
+          <span class="brand-sub" id="mainBrandMunicipality"></span>
         </div>
         <div class="mode-switch" id="modeSwitch" data-mode="resident">
           <button class="mode-btn active" data-mode="resident">Resident</button>
@@ -1350,7 +1351,7 @@
 
       <!-- PUBLIC VIEW -->
       <section id="view-public" class="view">
-        <h2>Open issues</h2>
+        <h2 id="publicHeading">Open issues</h2>
         <p class="lede">
           See what's already been reported nearby, so you don't have to file it
           again. No login needed to browse.
@@ -1418,6 +1419,19 @@
         "use strict";
 
         var TODAY = new Date("2026-09-09");
+
+        // ---------- tenant / municipality scoping ----------
+        // Each deployment of CivicReport serves exactly one municipality.
+        // The same codebase and data model support any number of
+        // municipalities: every report is stamped with municipalityId,
+        // and this MUNICIPALITY object is the only thing that changes
+        // between a Letsemeng instance, a Kopanong instance, and so on.
+        var MUNICIPALITY = {
+          id: "letsemeng",
+          name: "Letsemeng Local Municipality",
+          district: "Xhariep District Municipality",
+          province: "Free State",
+        };
 
         var CATEGORIES = {
           roads: { label: "Roads", color: getComputedColor("--roads") },
@@ -1526,6 +1540,7 @@
 
         var reports = [
           {
+            municipalityId: MUNICIPALITY.id,
             id: "CR-2026-00142",
             category: "electricity",
             title: "Broken streetlight",
@@ -1560,6 +1575,7 @@
             ],
           },
           {
+            municipalityId: MUNICIPALITY.id,
             id: "CR-2026-00098",
             category: "roads",
             title: "Deep pothole",
@@ -1578,6 +1594,7 @@
             notes: [],
           },
           {
+            municipalityId: MUNICIPALITY.id,
             id: "CR-2026-00103",
             category: "waste",
             title: "Illegal dumping",
@@ -1599,6 +1616,7 @@
             notes: [],
           },
           {
+            municipalityId: MUNICIPALITY.id,
             id: "CR-2026-00087",
             category: "water",
             title: "Water leak",
@@ -1638,6 +1656,7 @@
             ],
           },
           {
+            municipalityId: MUNICIPALITY.id,
             id: "CR-2026-00071",
             category: "sanitation",
             title: "Overflowing sewage",
@@ -1690,6 +1709,14 @@
         };
 
         // ---------- helpers ----------
+        function tenantReports() {
+          // All reads a resident, staff member, or the public should ever
+          // see are scoped through here, so a second municipality sharing
+          // this codebase never sees another municipality's reports.
+          return reports.filter(function (r) {
+            return r.municipalityId === MUNICIPALITY.id;
+          });
+        }
         function statusIndex(r) {
           return STATUS_ORDER.indexOf(r.history[r.history.length - 1].status);
         }
@@ -1850,7 +1877,7 @@
           searchResultsEl.innerHTML = "";
           if (query.length < 2) return;
 
-          var matches = reports
+          var matches = tenantReports()
             .filter(function (r) {
               if (isMerged(r) || currentStatus(r) === "Verified") return false;
               var haystack = (
@@ -1961,6 +1988,7 @@
             refCounter++;
             var ref = "CR-2026-" + String(refCounter).padStart(5, "0");
             var newReport = {
+              municipalityId: MUNICIPALITY.id,
               id: ref,
               category: state.selectedCategory,
               title: CATEGORIES[state.selectedCategory].label + " issue",
@@ -2065,7 +2093,7 @@
         function renderMyReports() {
           var container = document.getElementById("myReports");
           container.innerHTML = "";
-          var mine = reports.filter(function (r) {
+          var mine = tenantReports().filter(function (r) {
             return r.reporter === RESIDENT_ID || isFollowing(r);
           });
           if (mine.length === 0) {
@@ -2235,16 +2263,16 @@
         function renderStats() {
           var strip = document.getElementById("statStrip");
           strip.innerHTML = "";
-          var open = reports.filter(function (r) {
+          var open = tenantReports().filter(function (r) {
             return !isMerged(r) && currentStatus(r) !== "Verified";
           }).length;
-          var overdue = reports.filter(function (r) {
+          var overdue = tenantReports().filter(function (r) {
             return !isMerged(r) && isOverdue(r);
           }).length;
-          var inProgress = reports.filter(function (r) {
+          var inProgress = tenantReports().filter(function (r) {
             return !isMerged(r) && currentStatus(r) === "In Progress";
           }).length;
-          var newThisWeek = reports.filter(function (r) {
+          var newThisWeek = tenantReports().filter(function (r) {
             return !isMerged(r) && daysAgo(r.history[0].date) <= 7;
           }).length;
 
@@ -2315,7 +2343,7 @@
         }
 
         function renderWorkload() {
-          var open = reports.filter(function (r) {
+          var open = tenantReports().filter(function (r) {
             return !isMerged(r) && currentStatus(r) !== "Verified";
           });
 
@@ -2391,7 +2419,7 @@
         function renderRows() {
           var container = document.getElementById("reportRows");
           container.innerHTML = "";
-          var filtered = reports.filter(function (r) {
+          var filtered = tenantReports().filter(function (r) {
             var okCat =
               state.filterCategory === "all" ||
               r.category === state.filterCategory;
@@ -2822,7 +2850,7 @@
               var q = mergeSearch.value.trim().toLowerCase();
               mergeResults.innerHTML = "";
               if (q.length < 2) return;
-              var candidates = reports
+              var candidates = tenantReports()
                 .filter(function (x) {
                   if (x.id === r.id) return false;
                   if (isMerged(x)) return false;
@@ -2955,7 +2983,7 @@
 
         // ---------- public: breakdown + list ----------
         function renderPublicBreakdown() {
-          var open = reports.filter(function (r) {
+          var open = tenantReports().filter(function (r) {
             return !isMerged(r) && currentStatus(r) !== "Verified";
           });
           var totalEl = document.getElementById("publicTotal");
@@ -3040,7 +3068,7 @@
         function renderPublicList() {
           var container = document.getElementById("publicList");
           container.innerHTML = "";
-          var open = reports.filter(function (r) {
+          var open = tenantReports().filter(function (r) {
             var okCat =
               state.publicFilterCategory === "all" ||
               r.category === state.publicFilterCategory;
@@ -3339,6 +3367,22 @@
           buildPublicFilters();
           renderPublicList();
         }
+
+        // ---------- apply tenant branding ----------
+        // Everything a person sees is driven by MUNICIPALITY above. Point
+        // it at a different municipality and this entire screen rebrands,
+        // no other code changes needed.
+        function applyTenantBranding() {
+          document.getElementById("authLede").textContent =
+            "Sign in to report an issue or manage the queue for " +
+            MUNICIPALITY.name + ".";
+          document.getElementById("mainBrandMunicipality").textContent =
+            MUNICIPALITY.name;
+          document.getElementById("publicHeading").textContent =
+            "Open issues in " + MUNICIPALITY.name;
+          document.title = MUNICIPALITY.name + " CivicReport";
+        }
+        applyTenantBranding();
 
         positionThumb(roleSwitch, roleSwitch.querySelector(".mode-btn.active"));
         updateAuthCopyForRole();
