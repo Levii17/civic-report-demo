@@ -1,0 +1,3348 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CivicReport demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --surface: #ebe7dd;
+        --panel: #f6f3ec;
+        --panel-raised: #ffffff;
+        --ink: #1c1e1b;
+        --ink-soft: #65614f;
+        --ink-faint: #7a7564;
+        --line: #ccc5b2;
+        --line-strong: #a9a18a;
+        --roads: #d98a2b;
+        --electricity: #c43a2c;
+        --water: #2a6ba8;
+        --sanitation: #3d7a4f;
+        --waste: #8b6a3f;
+        --other: #6b6858;
+        --overdue: #b23a2c;
+        --radius-sm: 3px;
+        --radius-md: 6px;
+        --font-display: "Barlow Condensed", sans-serif;
+        --font-body: "Inter", sans-serif;
+        --font-mono: "IBM Plex Mono", monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--surface);
+        color: var(--ink);
+        font-family: var(--font-body);
+        font-size: 15px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+      button,
+      input,
+      textarea,
+      select {
+        font-family: inherit;
+        font-size: inherit;
+        color: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      :focus-visible {
+        outline: 2px solid var(--ink);
+        outline-offset: 2px;
+      }
+
+      .app {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 20px 24px 80px;
+      }
+
+      /* ---------- Topbar ---------- */
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 0 22px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 28px;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+      }
+      .brand-mark {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 1.5rem;
+        background: var(--ink);
+        color: var(--panel);
+        padding: 2px 8px 3px;
+        border-radius: var(--radius-sm);
+        letter-spacing: 0.02em;
+      }
+      .brand-name {
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 1.5rem;
+        letter-spacing: 0.01em;
+      }
+      .brand-sub {
+        font-size: 0.82rem;
+        color: var(--ink-soft);
+        margin-left: 2px;
+      }
+
+      .mode-switch {
+        position: relative;
+        display: flex;
+        background: var(--panel-raised);
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        padding: 3px;
+        gap: 2px;
+      }
+      .mode-btn {
+        position: relative;
+        z-index: 1;
+        border: none;
+        background: transparent;
+        padding: 8px 18px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        color: var(--ink-soft);
+        transition: color 0.15s ease;
+      }
+      .mode-btn.active {
+        color: var(--panel);
+      }
+      .mode-thumb {
+        position: absolute;
+        top: 3px;
+        bottom: 3px;
+        left: 3px;
+        width: 80px;
+        background: var(--ink);
+        border-radius: 999px;
+        transition:
+          left 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+          width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .mode-btn.hidden {
+        display: none;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      /* ---------- Auth screen ---------- */
+      .auth-wrap {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+      }
+      .auth-card {
+        width: 100%;
+        max-width: 420px;
+      }
+      .auth-brand {
+        justify-content: center;
+        margin-bottom: 8px;
+      }
+      .auth-lede {
+        text-align: center;
+        margin: 0 0 24px;
+        max-width: none;
+      }
+      .auth-role-switch {
+        width: 100%;
+        margin-bottom: 20px;
+      }
+      .auth-role-switch .mode-btn {
+        flex: 1;
+        text-align: center;
+      }
+      .auth-tabs {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .auth-tab {
+        background: none;
+        border: none;
+        padding: 8px 2px 12px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+      }
+      .auth-tab.active {
+        color: var(--ink);
+        border-bottom-color: var(--ink);
+      }
+      .auth-demo-note {
+        font-size: 0.78rem;
+        color: var(--ink-faint);
+        text-align: center;
+        margin: 16px 0 6px;
+      }
+      .auth-form-note {
+        font-size: 0.8rem;
+        color: var(--ink-soft);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        margin: 0 0 16px;
+      }
+      #signupIdField input {
+        background: var(--panel-raised);
+        border-color: var(--line-strong);
+      }
+      .auth-guest-link {
+        display: block;
+        width: 100%;
+        text-align: center;
+        background: none;
+        border: none;
+        color: var(--ink-soft);
+        font-size: 0.85rem;
+        text-decoration: underline;
+        padding: 8px 0 0;
+      }
+      .auth-status {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .auth-status-name {
+        font-size: 0.83rem;
+        color: var(--ink-soft);
+      }
+      .auth-logout-btn {
+        background: var(--panel-raised);
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        padding: 7px 14px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--ink);
+      }
+      @media (max-width: 560px) {
+        .auth-status-name {
+          display: none;
+        }
+      }
+
+      /* ---------- Toasts ---------- */
+      .toast-stack {
+        position: fixed;
+        left: 50%;
+        bottom: 22px;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 200;
+        width: min(380px, 92vw);
+        pointer-events: none;
+      }
+      .toast {
+        background: var(--ink);
+        color: var(--panel);
+        border-radius: var(--radius-md);
+        padding: 12px 16px;
+        font-size: 0.85rem;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transform: translateY(12px);
+        transition:
+          opacity 0.25s ease,
+          transform 0.25s ease;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* ---------- Layout ---------- */
+      .view {
+        display: none;
+      }
+      .view.active {
+        display: block;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: var(--font-display);
+        font-weight: 600;
+        margin: 0 0 4px;
+      }
+      h2 {
+        font-size: 1.5rem;
+      }
+      h3 {
+        font-size: 1.05rem;
+      }
+      .lede {
+        color: var(--ink-soft);
+        margin: 0 0 26px;
+        max-width: 52ch;
+      }
+
+      .resident-grid {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 34px;
+        align-items: start;
+      }
+      @media (max-width: 760px) {
+        .resident-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ---------- Form ---------- */
+      .panel {
+        background: var(--panel-raised);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        padding: 20px;
+      }
+      .field {
+        margin-bottom: 16px;
+      }
+      .field label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 7px;
+      }
+      .field input[type="text"],
+      .field input[type="email"],
+      .field input[type="password"],
+      .field select,
+      .field textarea {
+        width: 100%;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-sm);
+        padding: 9px 11px;
+        background: var(--panel);
+        resize: vertical;
+      }
+      .field textarea {
+        min-height: 76px;
+      }
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--line-strong);
+        background: var(--panel);
+        font-size: 0.83rem;
+        font-weight: 500;
+        transition:
+          background 0.12s ease,
+          color 0.12s ease,
+          border-color 0.12s ease;
+      }
+      .chip .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex: none;
+      }
+      .chip.selected {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: var(--panel);
+      }
+      .photo-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px dashed var(--line-strong);
+        background: var(--panel);
+        border-radius: var(--radius-sm);
+        padding: 9px 13px;
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+      }
+      .photo-btn.attached {
+        border-style: solid;
+        border-color: var(--sanitation);
+        color: var(--sanitation);
+      }
+      .visually-hidden {
+        position: absolute !important;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .photo-thumb-wrap {
+        margin-top: 10px;
+      }
+      .photo-thumb {
+        width: 130px;
+        height: 98px;
+        object-fit: cover;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--line-strong);
+        display: block;
+      }
+      .photo-remove-btn {
+        margin-top: 6px;
+        display: block;
+        background: none;
+        border: none;
+        color: var(--ink-soft);
+        font-size: 0.78rem;
+        text-decoration: underline;
+        padding: 0;
+      }
+      .photo-evidence {
+        margin-top: 12px;
+      }
+      .photo-evidence .photo-evidence-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        margin-bottom: 6px;
+      }
+      .photo-evidence img {
+        width: 100%;
+        max-width: 260px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--line);
+        display: block;
+      }
+      .submit-btn {
+        width: 100%;
+        background: var(--ink);
+        color: var(--panel);
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: 12px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-top: 4px;
+      }
+      .submit-btn:hover {
+        opacity: 0.9;
+      }
+      .success-msg {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        background: #eaf2eb;
+        border: 1px solid var(--sanitation);
+        color: #2c5e3b;
+        font-size: 0.86rem;
+        display: none;
+      }
+      .success-msg.show {
+        display: block;
+      }
+
+      /* ---------- Report cards (resident) ---------- */
+      .report-card {
+        background: var(--panel-raised);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        padding: 16px 18px;
+        margin-bottom: 14px;
+      }
+      .report-card-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .report-ref {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        color: var(--ink-soft);
+      }
+      .report-title {
+        font-weight: 600;
+        margin: 2px 0 3px;
+      }
+      .report-loc {
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+      }
+      .status-pill {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: var(--panel);
+        border: 1px solid var(--line-strong);
+        white-space: nowrap;
+      }
+      .expand-toggle {
+        background: none;
+        border: none;
+        color: var(--ink-soft);
+        font-size: 0.8rem;
+        text-decoration: underline;
+        padding: 0;
+        margin-top: 4px;
+      }
+      .timeline {
+        list-style: none;
+        margin: 14px 0 0;
+        padding: 0;
+      }
+      .timeline li {
+        position: relative;
+        padding-left: 24px;
+        padding-bottom: 16px;
+      }
+      .timeline li:last-child {
+        padding-bottom: 0;
+      }
+      .timeline li::before {
+        content: "";
+        position: absolute;
+        left: 4px;
+        top: 3px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--panel);
+        border: 2px solid var(--line-strong);
+      }
+      .timeline li::after {
+        content: "";
+        position: absolute;
+        left: 8.5px;
+        top: 16px;
+        bottom: 0;
+        width: 1px;
+        background: var(--line);
+      }
+      .timeline li:last-child::after {
+        display: none;
+      }
+      .timeline li.done::before {
+        background: var(--ink);
+        border-color: var(--ink);
+      }
+      .timeline li.done::after {
+        background: var(--ink-soft);
+      }
+      .timeline li.current::before {
+        background: var(--surface);
+        border-color: var(--ink);
+        box-shadow: 0 0 0 4px rgba(28, 30, 27, 0.13);
+        animation: pulse 1.8s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 4px rgba(28, 30, 27, 0.13);
+        }
+        50% {
+          box-shadow: 0 0 0 7px rgba(28, 30, 27, 0.05);
+        }
+      }
+      .t-status {
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      .t-date {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        color: var(--ink-faint);
+      }
+      .t-note {
+        font-size: 0.8rem;
+        color: var(--ink-soft);
+        margin-top: 1px;
+      }
+
+      .confirm-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 14px;
+        flex-wrap: wrap;
+      }
+      .confirm-row button {
+        border-radius: var(--radius-sm);
+        padding: 8px 13px;
+        font-size: 0.83rem;
+        font-weight: 600;
+        border: 1px solid var(--line-strong);
+        background: var(--panel);
+      }
+      .confirm-row .btn-primary {
+        background: var(--sanitation);
+        border-color: var(--sanitation);
+        color: #fff;
+      }
+      .confirm-row .btn-ghost:hover {
+        background: var(--panel-raised);
+      }
+      .dispute-form {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+      }
+      .dispute-form label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin-bottom: 6px;
+      }
+      .dispute-form textarea {
+        width: 100%;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-sm);
+        padding: 9px 11px;
+        background: var(--panel);
+        resize: vertical;
+        margin-bottom: 8px;
+        min-height: 64px;
+      }
+      #searchResults:not(:empty) {
+        margin-top: 10px;
+      }
+      .search-result {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 9px 10px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: var(--panel);
+        margin-bottom: 6px;
+      }
+      .search-result .sr-info {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+      }
+      .search-result .sr-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex: none;
+      }
+      .search-result .sr-text {
+        min-width: 0;
+      }
+      .search-result .sr-title {
+        font-size: 0.84rem;
+        font-weight: 600;
+      }
+      .search-result .sr-loc {
+        font-size: 0.75rem;
+        color: var(--ink-soft);
+      }
+      .search-result button {
+        flex: none;
+        font-size: 0.77rem;
+        font-weight: 600;
+        padding: 6px 11px;
+        border-radius: 999px;
+        border: 1px solid var(--line-strong);
+        background: var(--panel-raised);
+      }
+      .search-result button.following {
+        background: var(--ink);
+        color: var(--panel);
+        border-color: var(--ink);
+      }
+      .search-result button:disabled {
+        color: var(--ink-faint);
+        cursor: default;
+      }
+      .search-hint {
+        font-size: 0.78rem;
+        color: var(--ink-soft);
+        margin-top: 2px;
+      }
+      .follow-msg {
+        font-size: 0.82rem;
+        color: #2c5e3b;
+        background: #eaf2eb;
+        border: 1px solid var(--sanitation);
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+        margin-top: 8px;
+        display: none;
+      }
+      .follow-msg.show {
+        display: block;
+      }
+      .card-tag {
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 2px 9px;
+        margin-top: 6px;
+      }
+      .unfollow-btn {
+        background: none;
+        border: none;
+        color: var(--ink-soft);
+        font-size: 0.8rem;
+        text-decoration: underline;
+        padding: 0;
+        margin-top: 12px;
+      }
+      .public-total {
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 2.6rem;
+        line-height: 1;
+        margin-bottom: 16px;
+      }
+      .public-total .unit {
+        font-family: var(--font-body);
+        font-weight: 500;
+        font-size: 1rem;
+        color: var(--ink-soft);
+        margin-left: 10px;
+      }
+      .public-breakdown {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 22px;
+      }
+      .pb-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--line);
+        background: var(--panel-raised);
+        border-radius: var(--radius-sm);
+        padding: 8px 13px;
+      }
+      .pb-item .pb-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex: none;
+      }
+      .pb-item .pb-num {
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 1.15rem;
+      }
+      .pb-item .pb-label {
+        font-size: 0.8rem;
+        color: var(--ink-soft);
+      }
+      .public-card-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--line);
+        flex-wrap: wrap;
+      }
+      .public-card-foot .pcf-meta {
+        font-size: 0.8rem;
+        color: var(--ink-soft);
+      }
+      .public-card-foot button {
+        flex: none;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 7px 13px;
+        border-radius: 999px;
+        border: 1px solid var(--line-strong);
+        background: var(--panel);
+      }
+      .public-card-foot button.following {
+        background: var(--ink);
+        color: var(--panel);
+        border-color: var(--ink);
+      }
+
+      /* ---------- Municipal: stats ---------- */
+      .stat-strip {
+        display: flex;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        background: var(--panel-raised);
+        margin-bottom: 24px;
+      }
+      .stat {
+        flex: 1;
+        padding: 16px 18px;
+        border-right: 1px solid var(--line);
+      }
+      .stat:last-child {
+        border-right: none;
+      }
+      .stat .num {
+        font-family: var(--font-display);
+        font-size: 2.1rem;
+        line-height: 1;
+        font-weight: 600;
+      }
+      .stat .num.warn {
+        color: var(--overdue);
+      }
+      .stat .label {
+        font-size: 0.78rem;
+        color: var(--ink-soft);
+        margin-top: 5px;
+      }
+      @media (max-width: 600px) {
+        .stat-strip {
+          flex-wrap: wrap;
+        }
+        .stat {
+          flex: 1 1 50%;
+          border-bottom: 1px solid var(--line);
+        }
+      }
+
+      /* ---------- Municipal: workload breakdown ---------- */
+      .workload-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 28px;
+        margin-bottom: 26px;
+      }
+      .workload-col h3 {
+        font-size: 0.92rem;
+        margin-bottom: 10px;
+      }
+      .wl-row {
+        display: grid;
+        grid-template-columns: 112px 1fr 24px;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .wl-row:last-child {
+        border-bottom: none;
+      }
+      .wl-label {
+        font-size: 0.82rem;
+        color: var(--ink-soft);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .wl-track {
+        height: 7px;
+        background: var(--panel);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .wl-fill {
+        height: 100%;
+        background: var(--ink);
+        border-radius: 4px;
+      }
+      .wl-count {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        color: var(--ink-soft);
+        text-align: right;
+      }
+      @media (max-width: 700px) {
+        .workload-grid {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+      }
+
+      /* ---------- Municipal: filters ---------- */
+      .filter-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .filter-row select {
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-sm);
+        background: var(--panel-raised);
+        padding: 7px 10px;
+      }
+      .chip.filter {
+        background: var(--panel-raised);
+        cursor: pointer;
+      }
+      .chip.filter.selected {
+        background: var(--ink);
+        color: var(--panel);
+        border-color: var(--ink);
+      }
+
+      /* ---------- Municipal: report list ---------- */
+      .report-list {
+        background: var(--panel-raised);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+      }
+      .report-row {
+        display: grid;
+        grid-template-columns: 6px 92px 1.4fr 130px 110px 90px;
+        gap: 14px;
+        align-items: center;
+        padding: 13px 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .report-row:last-child {
+        border-bottom: none;
+      }
+      .report-row:hover {
+        background: var(--panel);
+      }
+      .report-row.header-row {
+        background: var(--panel);
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        cursor: default;
+      }
+      .report-row.header-row:hover {
+        background: var(--panel);
+      }
+      .cat-bar {
+        width: 6px;
+        height: 26px;
+        border-radius: 2px;
+      }
+      .row-ref {
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+      }
+      .row-loc {
+        font-size: 0.86rem;
+      }
+      .row-loc .row-sub {
+        display: block;
+        font-size: 0.76rem;
+        color: var(--ink-soft);
+        margin-top: 1px;
+      }
+      .row-btn {
+        background: none;
+        border: none;
+        text-align: left;
+        padding: 0;
+        width: 100%;
+        cursor: pointer;
+      }
+      .age-overdue {
+        color: var(--overdue);
+        font-weight: 600;
+      }
+      .merged-row {
+        opacity: 0.6;
+      }
+      .age-overdue-note {
+        color: #8a2e22;
+        background: #fbeeec;
+        border-color: var(--overdue);
+      }
+      @media (max-width: 720px) {
+        .report-row {
+          grid-template-columns: 6px 1fr 90px;
+        }
+        .report-row > *:nth-child(2) {
+          grid-column: 2;
+        }
+        .row-ref,
+        .row-priority {
+          display: none;
+        }
+      }
+
+      /* ---------- Detail overlay/panel ---------- */
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(28, 30, 27, 0.35);
+        display: flex;
+        justify-content: flex-end;
+        z-index: 50;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.18s ease;
+      }
+      .overlay.show {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .detail-panel {
+        width: min(420px, 92vw);
+        height: 100%;
+        background: var(--panel-raised);
+        padding: 24px;
+        overflow-y: auto;
+        transform: translateX(100%);
+        transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: -8px 0 24px rgba(0, 0, 0, 0.08);
+      }
+      .overlay.show .detail-panel {
+        transform: translateX(0);
+      }
+      .detail-close {
+        position: absolute;
+        top: 18px;
+        right: 18px;
+        background: none;
+        border: none;
+        font-size: 1.3rem;
+        color: var(--ink-soft);
+        line-height: 1;
+      }
+      .detail-head {
+        margin-bottom: 18px;
+        padding-right: 28px;
+      }
+      .detail-sec {
+        margin-top: 22px;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+      }
+      .detail-sec label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.83rem;
+        margin-bottom: 6px;
+      }
+      .detail-sec select,
+      .detail-sec textarea,
+      .detail-sec input[type="text"] {
+        width: 100%;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+        background: var(--panel);
+        margin-bottom: 8px;
+      }
+      .detail-sec textarea.invalid {
+        border-color: var(--overdue);
+        background: #fbeeec;
+      }
+      .action-btn {
+        width: 100%;
+        background: var(--ink);
+        color: var(--panel);
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: 11px;
+        font-weight: 600;
+        font-size: 0.88rem;
+      }
+      .action-btn:hover {
+        opacity: 0.9;
+      }
+      .action-btn:disabled {
+        background: var(--line-strong);
+        cursor: default;
+      }
+      .await-note {
+        font-size: 0.83rem;
+        color: var(--ink-soft);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+      }
+      .note-item {
+        font-size: 0.83rem;
+        border-bottom: 1px solid var(--line);
+        padding: 8px 0;
+      }
+      .note-item:last-child {
+        border-bottom: none;
+      }
+      .note-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 3px;
+      }
+      .note-item .note-date {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--ink-faint);
+      }
+      .note-author {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        padding: 2px 7px;
+        border-radius: 999px;
+        flex: none;
+      }
+      .note-author.staff {
+        background: var(--ink);
+        color: var(--panel);
+      }
+      .note-author.resident {
+        background: var(--panel);
+        color: var(--ink-soft);
+        border: 1px solid var(--line-strong);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="auth-wrap" id="authScreen">
+      <div class="auth-card">
+        <div class="brand auth-brand">
+          <!-- <span class="brand-mark">CR</span> -->
+          <span class="brand-name">CivicReport</span>
+        </div>
+        <p class="lede auth-lede">
+          Sign in to report an issue or manage the municipal queue.
+        </p>
+
+        <div
+          class="mode-switch auth-role-switch"
+          id="roleSwitch"
+          data-role="resident"
+        >
+          <button type="button" class="mode-btn active" data-role="resident">
+            Resident
+          </button>
+          <button type="button" class="mode-btn" data-role="municipal">
+            Municipal staff
+          </button>
+          <span class="mode-thumb"></span>
+        </div>
+
+        <div class="auth-tabs" id="authTabs">
+          <button type="button" class="auth-tab active" data-tab="login">
+            Log in
+          </button>
+          <button
+            type="button"
+            class="auth-tab"
+            data-tab="signup"
+            id="signupTabBtn"
+          >
+            Create account
+          </button>
+        </div>
+
+        <form class="panel auth-form" id="loginForm">
+          <div class="field">
+            <label for="loginEmail">Email</label>
+            <input
+              type="email"
+              id="loginEmail"
+              placeholder="you@example.com"
+              autofocus
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="loginPassword">Password</label>
+            <input
+              type="password"
+              id="loginPassword"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <button type="submit" class="submit-btn" id="loginSubmitBtn">
+            Log in as resident
+          </button>
+        </form>
+
+        <form class="panel auth-form hidden" id="signupForm">
+          <p class="auth-form-note hidden" id="signupMunicipalNote">
+            Staff accounts are tied to a valid employee ID and department.
+            Access is issued by your municipality, not self-registered.
+          </p>
+          <div class="field">
+            <label for="signupName">Full name</label>
+            <input
+              type="text"
+              id="signupName"
+              placeholder="e.g. Nomvula Khumalo"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="signupEmail" id="signupEmailLabel">Email</label>
+            <input
+              type="email"
+              id="signupEmail"
+              placeholder="you@example.com"
+              required
+            />
+          </div>
+          <div class="field hidden" id="signupIdField">
+            <label for="signupStaffId">Employee ID</label>
+            <input
+              type="text"
+              id="signupStaffId"
+              placeholder="e.g. EMP-04821"
+            />
+          </div>
+          <div class="field hidden" id="signupDeptField">
+            <label for="signupDept">Department</label>
+            <select id="signupDept"></select>
+          </div>
+          <div class="field">
+            <label for="signupPassword">Password</label>
+            <input
+              type="password"
+              id="signupPassword"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <button type="submit" class="submit-btn" id="signupSubmitBtn">
+            Create resident account
+          </button>
+        </form>
+
+        <p class="auth-demo-note">
+          This is a demo, any email and password will work. Try
+          resident@demo.local for the resident flow, or staff@demo.local for
+          municipal ops.
+        </p>
+        <button type="button" class="auth-guest-link" id="guestLink">
+          Continue without an account, browse public issues
+        </button>
+      </div>
+    </div>
+
+    <div class="app hidden" id="mainApp">
+      <header class="topbar">
+        <div class="brand">
+          <!-- <span class="brand-mark">CR</span> -->
+          <span class="brand-name">CivicReport</span>
+          <span class="brand-sub">demo</span>
+        </div>
+        <div class="mode-switch" id="modeSwitch" data-mode="resident">
+          <button class="mode-btn active" data-mode="resident">Resident</button>
+          <button class="mode-btn" data-mode="public">Public</button>
+          <button class="mode-btn" data-mode="municipal">Municipal ops</button>
+          <span class="mode-thumb"></span>
+        </div>
+        <div class="auth-status">
+          <span class="auth-status-name" id="authStatusName"></span>
+          <button type="button" class="auth-logout-btn" id="logoutBtn">
+            Log out
+          </button>
+        </div>
+      </header>
+
+      <!-- RESIDENT VIEW -->
+      <section id="view-resident" class="view active">
+        <h2>Report a problem</h2>
+        <p class="lede">
+          Tell us what's wrong and where. You'll get a reference number and can
+          track it through to resolution.
+        </p>
+
+        <div class="resident-grid">
+          <form class="panel" id="reportForm">
+            <div class="field">
+              <label for="searchInput">Already reported? Search first</label>
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="e.g. pothole, Main Road"
+                autocomplete="off"
+              />
+              <div id="searchResults"></div>
+            </div>
+            <div class="field">
+              <label>What's the issue?</label>
+              <div class="chip-row" id="categoryChips"></div>
+            </div>
+            <div class="field">
+              <label for="locInput">Where is it?</label>
+              <input
+                type="text"
+                id="locInput"
+                placeholder="e.g. Community Centre Road, Ward 12"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="descInput">Describe it</label>
+              <textarea
+                id="descInput"
+                placeholder="What's happening, and since when?"
+                required
+              ></textarea>
+            </div>
+            <div class="field">
+              <label for="photoInput">Add a photo</label>
+              <input
+                type="file"
+                id="photoInput"
+                accept="image/*"
+                class="visually-hidden"
+              />
+              <button type="button" class="photo-btn" id="photoBtn">
+                Attach a photo
+              </button>
+              <div id="photoPreviewWrap"></div>
+            </div>
+            <button type="submit" class="submit-btn">Submit report</button>
+            <div class="success-msg" id="successMsg"></div>
+          </form>
+
+          <div>
+            <h3>My reports</h3>
+            <div id="myReports"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PUBLIC VIEW -->
+      <section id="view-public" class="view">
+        <h2>Open issues</h2>
+        <p class="lede">
+          See what's already been reported nearby, so you don't have to file it
+          again. No login needed to browse.
+        </p>
+
+        <div class="public-total" id="publicTotal"></div>
+        <div class="public-breakdown" id="publicBreakdown"></div>
+
+        <div class="filter-row" id="publicCategoryFilters"></div>
+
+        <div id="publicList"></div>
+      </section>
+
+      <!-- MUNICIPAL VIEW -->
+      <section id="view-municipal" class="view">
+        <h2>Operations</h2>
+        <p class="lede">
+          Every report in the queue, its status, and who owns it next.
+        </p>
+
+        <div class="stat-strip" id="statStrip"></div>
+
+        <div class="workload-grid" id="workloadGrid">
+          <div class="workload-col">
+            <h3>Open work by department</h3>
+            <div id="deptBreakdown"></div>
+          </div>
+          <div class="workload-col">
+            <h3>Open work by ward</h3>
+            <div id="wardBreakdown"></div>
+          </div>
+        </div>
+
+        <div class="filter-row" id="categoryFilters"></div>
+        <div class="filter-row">
+          <select id="statusFilter">
+            <option value="all">All statuses</option>
+          </select>
+        </div>
+
+        <div class="report-list">
+          <div class="report-row header-row">
+            <span></span><span>Reference</span><span>Issue &amp; location</span
+            ><span>Status</span><span>Priority</span><span>Age</span>
+          </div>
+          <div id="reportRows"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="overlay" id="detailOverlay" inert>
+      <div
+        class="detail-panel"
+        id="detailPanel"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Report details"
+      ></div>
+    </div>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var TODAY = new Date("2026-09-09");
+
+        var CATEGORIES = {
+          roads: { label: "Roads", color: getComputedColor("--roads") },
+          electricity: {
+            label: "Electricity",
+            color: getComputedColor("--electricity"),
+          },
+          water: { label: "Water", color: getComputedColor("--water") },
+          sanitation: {
+            label: "Sanitation",
+            color: getComputedColor("--sanitation"),
+          },
+          waste: { label: "Waste", color: getComputedColor("--waste") },
+          other: { label: "Other", color: getComputedColor("--other") },
+        };
+        function getComputedColor(varName) {
+          // resolved after stylesheet loads; fallback map in case of timing issues
+          var fallback = {
+            "--roads": "#D98A2B",
+            "--electricity": "#C43A2C",
+            "--water": "#2A6BA8",
+            "--sanitation": "#3D7A4F",
+            "--waste": "#8B6A3F",
+            "--other": "#6B6858",
+          };
+          return fallback[varName];
+        }
+
+        // Target days from submission to resolution, by category. Used to compute
+        // "overdue" live rather than as a hand-set flag on each report.
+        var TARGET_DAYS = {
+          roads: 5,
+          electricity: 4,
+          water: 4,
+          sanitation: 3,
+          waste: 6,
+          other: 7,
+        };
+
+        var STATUS_ORDER = [
+          "Submitted",
+          "Under Review",
+          "Acknowledged",
+          "Assigned",
+          "In Progress",
+          "Resolved",
+          "Verified",
+        ];
+        var NEXT_ACTION_LABEL = {
+          Submitted: "Move to under review",
+          "Under Review": "Acknowledge report",
+          Acknowledged: "Assign to department",
+          Assigned: "Start work",
+          "In Progress": "Mark resolved",
+        };
+        var DEPARTMENTS = [
+          "Electrical Services",
+          "Water & Sanitation",
+          "Roads & Stormwater",
+          "Waste Management",
+          "Parks & Public Spaces",
+          "General Services",
+        ];
+        var DEFAULT_DEPT = {
+          roads: "Roads & Stormwater",
+          electricity: "Electrical Services",
+          water: "Water & Sanitation",
+          sanitation: "Water & Sanitation",
+          waste: "Waste Management",
+          other: "General Services",
+        };
+
+        var RESIDENT_ID = "R-04821";
+        var refCounter = 143;
+
+        // ---------- toasts ----------
+        var toastStack = document.getElementById("toastStack");
+        function showToast(message) {
+          var el = document.createElement("div");
+          el.className = "toast";
+          el.textContent = message;
+          toastStack.appendChild(el);
+          requestAnimationFrame(function () {
+            el.classList.add("show");
+          });
+          setTimeout(function () {
+            el.classList.remove("show");
+            setTimeout(function () {
+              el.remove();
+            }, 250);
+          }, 4200);
+        }
+        function notifyStatusChange(r, newStatus) {
+          if (r.reporter === RESIDENT_ID) {
+            showToast("Your report " + r.id + " moved to " + newStatus + ".");
+          } else if (isFollowing(r)) {
+            showToast(
+              r.id + " (an issue you're following) moved to " + newStatus + ".",
+            );
+          }
+        }
+
+        function d(s) {
+          return s;
+        } // date already formatted as string in seed data
+
+        var reports = [
+          {
+            id: "CR-2026-00142",
+            category: "electricity",
+            title: "Broken streetlight",
+            location: "Community Centre Road",
+            ward: "Ward 12",
+            description:
+              "Streetlight has been broken for approximately two weeks.",
+            reporter: RESIDENT_ID,
+            priority: "Medium",
+            department: "Electrical Services",
+            assignedTo: "M. Mokoena",
+            linkedResidents: 0,
+            followers: [],
+            mergedInto: null,
+            history: [
+              { status: "Submitted", date: "2026-09-01" },
+              { status: "Under Review", date: "2026-09-01" },
+              { status: "Acknowledged", date: "2026-09-02" },
+              {
+                status: "Assigned",
+                date: "2026-09-03",
+                note: "Electrical Services",
+              },
+              { status: "In Progress", date: "2026-09-05" },
+            ],
+            notes: [
+              {
+                text: "Technician scheduled for site visit.",
+                date: "2026-09-05",
+                author: "staff",
+              },
+            ],
+          },
+          {
+            id: "CR-2026-00098",
+            category: "roads",
+            title: "Deep pothole",
+            location: "Main Road",
+            ward: "Ward 4",
+            description:
+              "Large pothole causing vehicles to swerve into oncoming traffic.",
+            reporter: "R-11209",
+            priority: "High",
+            department: "Roads & Stormwater",
+            assignedTo: "",
+            linkedResidents: 46,
+            followers: [],
+            mergedInto: null,
+            history: [{ status: "Submitted", date: "2026-09-03" }],
+            notes: [],
+          },
+          {
+            id: "CR-2026-00103",
+            category: "waste",
+            title: "Illegal dumping",
+            location: "Vacant lot, Zone 3",
+            ward: "Ward 7",
+            description:
+              "Builder's rubble and household waste dumped on the corner lot.",
+            reporter: "R-08823",
+            priority: "Medium",
+            department: "Waste Management",
+            assignedTo: "",
+            linkedResidents: 2,
+            followers: [],
+            mergedInto: null,
+            history: [
+              { status: "Submitted", date: "2026-09-07" },
+              { status: "Under Review", date: "2026-09-08" },
+            ],
+            notes: [],
+          },
+          {
+            id: "CR-2026-00087",
+            category: "water",
+            title: "Water leak",
+            location: "Central Street",
+            ward: "Ward 2",
+            description:
+              "Steady leak from a joint in the pavement, running into the road.",
+            reporter: "R-03310",
+            priority: "Low",
+            department: "Water & Sanitation",
+            assignedTo: "T. Naidoo",
+            linkedResidents: 1,
+            followers: [],
+            mergedInto: null,
+            history: [
+              { status: "Submitted", date: "2026-08-20" },
+              { status: "Under Review", date: "2026-08-21" },
+              { status: "Acknowledged", date: "2026-08-21" },
+              {
+                status: "Assigned",
+                date: "2026-08-22",
+                note: "Water & Sanitation",
+              },
+              { status: "In Progress", date: "2026-08-25" },
+              {
+                status: "Resolved",
+                date: "2026-08-27",
+                note: "Pipe joint replaced and pressure-tested.",
+              },
+            ],
+            notes: [
+              {
+                text: "Pipe joint replaced and pressure-tested.",
+                date: "2026-08-27",
+                author: "staff",
+              },
+            ],
+          },
+          {
+            id: "CR-2026-00071",
+            category: "sanitation",
+            title: "Overflowing sewage",
+            location: "Extension 9",
+            ward: "Ward 15",
+            description:
+              "Sewage overflow near the community hall, ongoing for several days.",
+            reporter: "R-09944",
+            priority: "High",
+            department: "Water & Sanitation",
+            assignedTo: "S. Dlamini",
+            linkedResidents: 5,
+            followers: [],
+            mergedInto: null,
+            history: [
+              { status: "Submitted", date: "2026-08-01" },
+              { status: "Under Review", date: "2026-08-01" },
+              { status: "Acknowledged", date: "2026-08-02" },
+              {
+                status: "Assigned",
+                date: "2026-08-02",
+                note: "Water & Sanitation",
+              },
+              { status: "In Progress", date: "2026-08-03" },
+              {
+                status: "Resolved",
+                date: "2026-08-05",
+                note: "Blockage cleared and line flushed.",
+              },
+              { status: "Verified", date: "2026-08-07" },
+            ],
+            notes: [
+              {
+                text: "Blockage cleared; resident confirmed resolution.",
+                date: "2026-08-07",
+                author: "staff",
+              },
+            ],
+          },
+        ];
+
+        var state = {
+          mode: "resident",
+          selectedCategory: null,
+          pendingPhoto: null,
+          filterCategory: "all",
+          filterStatus: "all",
+          publicFilterCategory: "all",
+          detailId: null,
+        };
+
+        // ---------- helpers ----------
+        function statusIndex(r) {
+          return STATUS_ORDER.indexOf(r.history[r.history.length - 1].status);
+        }
+        function currentStatus(r) {
+          return r.history[r.history.length - 1].status;
+        }
+        function isFollowing(r) {
+          return r.followers.indexOf(RESIDENT_ID) !== -1;
+        }
+        function affectedCount(r) {
+          return r.linkedResidents + r.followers.length;
+        }
+        function isMerged(r) {
+          return !!r.mergedInto;
+        }
+        function findReport(id) {
+          return reports.filter(function (x) {
+            return x.id === id;
+          })[0];
+        }
+        function ageDays(dateStr) {
+          var submitted = new Date(r_firstDate(dateStr));
+          return Math.round((TODAY - submitted) / 86400000);
+        }
+        function r_firstDate(historyArr) {
+          return historyArr[0].date;
+        }
+        function fmtDate(s) {
+          var parts = s.split("-");
+          var months = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ];
+          return (
+            parts[2] + " " + months[parseInt(parts[1], 10) - 1] + " " + parts[0]
+          );
+        }
+        function todayStr() {
+          return "2026-09-09";
+        }
+        function daysAgo(dateStr) {
+          return Math.round((TODAY - new Date(dateStr)) / 86400000);
+        }
+        function isOverdue(r) {
+          var status = currentStatus(r);
+          if (status === "Resolved" || status === "Verified") return false;
+          return daysAgo(r.history[0].date) > TARGET_DAYS[r.category];
+        }
+
+        function catDot(catKey) {
+          var c = CATEGORIES[catKey];
+          var span = document.createElement("span");
+          span.className = "dot";
+          span.style.background = c.color;
+          return span;
+        }
+
+        // ---------- category chips (form) ----------
+        var chipRow = document.getElementById("categoryChips");
+        Object.keys(CATEGORIES).forEach(function (key) {
+          var c = CATEGORIES[key];
+          var chip = document.createElement("button");
+          chip.type = "button";
+          chip.className = "chip";
+          chip.dataset.cat = key;
+          var dot = document.createElement("span");
+          dot.className = "dot";
+          dot.style.background = c.color;
+          chip.appendChild(dot);
+          chip.appendChild(document.createTextNode(c.label));
+          chip.addEventListener("click", function () {
+            state.selectedCategory = key;
+            Array.prototype.forEach.call(chipRow.children, function (el) {
+              el.classList.remove("selected");
+            });
+            chip.classList.add("selected");
+          });
+          chipRow.appendChild(chip);
+        });
+
+        var photoInput = document.getElementById("photoInput");
+        var photoBtn = document.getElementById("photoBtn");
+        var photoPreviewWrap = document.getElementById("photoPreviewWrap");
+
+        photoBtn.addEventListener("click", function () {
+          photoInput.click();
+        });
+
+        photoInput.addEventListener("change", function () {
+          var file = this.files && this.files[0];
+          if (!file || file.type.indexOf("image/") !== 0) return;
+          var reader = new FileReader();
+          reader.onload = function (e) {
+            state.pendingPhoto = e.target.result;
+            renderPhotoPreview();
+          };
+          reader.readAsDataURL(file);
+        });
+
+        function renderPhotoPreview() {
+          photoPreviewWrap.innerHTML = "";
+          photoBtn.classList.toggle("attached", !!state.pendingPhoto);
+          photoBtn.textContent = state.pendingPhoto
+            ? "Photo attached"
+            : "Attach a photo";
+          if (!state.pendingPhoto) return;
+          var wrap = document.createElement("div");
+          wrap.className = "photo-thumb-wrap";
+          var img = document.createElement("img");
+          img.className = "photo-thumb";
+          img.src = state.pendingPhoto;
+          img.alt = "Preview of the attached photo";
+          var removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "photo-remove-btn";
+          removeBtn.textContent = "Remove photo";
+          removeBtn.addEventListener("click", function () {
+            state.pendingPhoto = null;
+            photoInput.value = "";
+            renderPhotoPreview();
+          });
+          wrap.appendChild(img);
+          wrap.appendChild(removeBtn);
+          photoPreviewWrap.appendChild(wrap);
+        }
+
+        function renderPhotoEvidence(container, photoDataUrl) {
+          if (!photoDataUrl) return;
+          var block = document.createElement("div");
+          block.className = "photo-evidence";
+          var label = document.createElement("div");
+          label.className = "photo-evidence-label";
+          label.textContent = "Photo evidence";
+          var img = document.createElement("img");
+          img.src = photoDataUrl;
+          img.alt = "Photo submitted with this report";
+          block.appendChild(label);
+          block.appendChild(img);
+          container.appendChild(block);
+        }
+
+        // ---------- search / follow existing issue ----------
+        var searchInput = document.getElementById("searchInput");
+        var searchResultsEl = document.getElementById("searchResults");
+
+        function renderSearchResults() {
+          var query = searchInput.value.trim().toLowerCase();
+          searchResultsEl.innerHTML = "";
+          if (query.length < 2) return;
+
+          var matches = reports
+            .filter(function (r) {
+              if (isMerged(r) || currentStatus(r) === "Verified") return false;
+              var haystack = (
+                r.title +
+                " " +
+                r.location +
+                " " +
+                r.ward +
+                " " +
+                CATEGORIES[r.category].label
+              ).toLowerCase();
+              return haystack.indexOf(query) !== -1;
+            })
+            .slice(0, 5);
+
+          if (matches.length === 0) {
+            var none = document.createElement("div");
+            none.className = "search-hint";
+            none.textContent =
+              "No open issues match yet, worth filing a new report below.";
+            searchResultsEl.appendChild(none);
+            return;
+          }
+
+          var hint = document.createElement("div");
+          hint.className = "search-hint";
+          hint.textContent =
+            matches.length +
+            " open issue" +
+            (matches.length > 1 ? "s" : "") +
+            " may already cover this.";
+          searchResultsEl.appendChild(hint);
+
+          matches.forEach(function (r) {
+            var row = document.createElement("div");
+            row.className = "search-result";
+
+            var info = document.createElement("div");
+            info.className = "sr-info";
+            var dot = document.createElement("span");
+            dot.className = "sr-dot";
+            dot.style.background = CATEGORIES[r.category].color;
+            var text = document.createElement("div");
+            text.className = "sr-text";
+            var title = document.createElement("div");
+            title.className = "sr-title";
+            title.textContent = r.title;
+            var loc = document.createElement("div");
+            loc.className = "sr-loc";
+            loc.textContent =
+              r.location +
+              (r.ward ? ", " + r.ward : "") +
+              ", " +
+              currentStatus(r);
+            text.appendChild(title);
+            text.appendChild(loc);
+            info.appendChild(dot);
+            info.appendChild(text);
+            row.appendChild(info);
+
+            var btn = document.createElement("button");
+            btn.type = "button";
+            if (r.reporter === RESIDENT_ID) {
+              btn.textContent = "Your report";
+              btn.disabled = true;
+            } else if (isFollowing(r)) {
+              btn.textContent = "Following";
+              btn.classList.add("following");
+              btn.addEventListener("click", function () {
+                r.followers.splice(r.followers.indexOf(RESIDENT_ID), 1);
+                renderSearchResults();
+                render();
+              });
+            } else {
+              btn.textContent = "Follow this issue";
+              btn.addEventListener("click", function () {
+                r.followers.push(RESIDENT_ID);
+                renderSearchResults();
+                var msg = document.createElement("div");
+                msg.className = "follow-msg show";
+                msg.textContent =
+                  "You're now following " +
+                  r.id +
+                  ". It'll show up in My reports with the same updates.";
+                searchResultsEl.insertBefore(msg, searchResultsEl.firstChild);
+                render();
+              });
+            }
+            row.appendChild(btn);
+            searchResultsEl.appendChild(row);
+          });
+        }
+        searchInput.addEventListener("input", renderSearchResults);
+
+        // ---------- submit new report ----------
+        document
+          .getElementById("reportForm")
+          .addEventListener("submit", function (e) {
+            e.preventDefault();
+            if (!state.selectedCategory) {
+              alert("Choose a category for the issue first.");
+              return;
+            }
+            var loc = document.getElementById("locInput").value.trim();
+            var desc = document.getElementById("descInput").value.trim();
+            if (!loc || !desc) return;
+
+            refCounter++;
+            var ref = "CR-2026-" + String(refCounter).padStart(5, "0");
+            var newReport = {
+              id: ref,
+              category: state.selectedCategory,
+              title: CATEGORIES[state.selectedCategory].label + " issue",
+              location: loc,
+              ward: "",
+              description: desc,
+              reporter: RESIDENT_ID,
+              priority: "Medium",
+              department: DEFAULT_DEPT[state.selectedCategory],
+              assignedTo: "",
+              linkedResidents: 0,
+              followers: [],
+              mergedInto: null,
+              photo: state.pendingPhoto,
+              history: [{ status: "Submitted", date: todayStr() }],
+              notes: [],
+            };
+            reports.unshift(newReport);
+
+            var msg = document.getElementById("successMsg");
+            msg.textContent =
+              "Report " +
+              ref +
+              " submitted. You'll see updates below as it moves through the process.";
+            msg.classList.add("show");
+
+            this.reset();
+            state.selectedCategory = null;
+            state.pendingPhoto = null;
+            Array.prototype.forEach.call(chipRow.children, function (el) {
+              el.classList.remove("selected");
+            });
+            renderPhotoPreview();
+
+            render();
+            setTimeout(function () {
+              msg.classList.remove("show");
+            }, 6000);
+          });
+
+        // ---------- timeline builder ----------
+        function buildTimeline(report, includeAwait) {
+          var ul = document.createElement("ul");
+          ul.className = "timeline";
+          var curIdx = statusIndex(report);
+          STATUS_ORDER.forEach(function (status, i) {
+            var li = document.createElement("li");
+            var matches = report.history.filter(function (h) {
+              return h.status === status;
+            });
+            var entry = matches[matches.length - 1];
+            if (i < curIdx) {
+              li.classList.add("done");
+            } else if (i === curIdx) {
+              li.classList.add(status === "Verified" ? "done" : "current");
+            }
+
+            var statusEl = document.createElement("div");
+            statusEl.className = "t-status";
+            statusEl.textContent = status;
+            li.appendChild(statusEl);
+
+            if (entry) {
+              var dateEl = document.createElement("div");
+              dateEl.className = "t-date";
+              dateEl.textContent = fmtDate(entry.date);
+              li.appendChild(dateEl);
+              if (entry.note) {
+                var noteEl = document.createElement("div");
+                noteEl.className = "t-note";
+                noteEl.textContent = entry.note;
+                li.appendChild(noteEl);
+              }
+            } else if (i === curIdx + 1) {
+              var pending = document.createElement("div");
+              pending.className = "t-date";
+              pending.textContent = "Not yet reached";
+              li.appendChild(pending);
+            }
+            ul.appendChild(li);
+          });
+
+          if (includeAwait && currentStatus(report) === "Resolved") {
+            var li2 = document.createElement("li");
+            li2.classList.add("current");
+            var s2 = document.createElement("div");
+            s2.className = "t-status";
+            s2.textContent = "Verification";
+            li2.appendChild(s2);
+            var n2 = document.createElement("div");
+            n2.className = "t-note";
+            n2.textContent = "Awaiting resident confirmation";
+            li2.appendChild(n2);
+            ul.appendChild(li2);
+          }
+          return ul;
+        }
+
+        // ---------- resident: my reports ----------
+        var expanded = {};
+        var disputeOpen = {};
+        function renderMyReports() {
+          var container = document.getElementById("myReports");
+          container.innerHTML = "";
+          var mine = reports.filter(function (r) {
+            return r.reporter === RESIDENT_ID || isFollowing(r);
+          });
+          if (mine.length === 0) {
+            var empty = document.createElement("p");
+            empty.className = "lede";
+            empty.textContent =
+              "You haven't submitted or followed anything yet. Reports you file, or issues you follow, will appear here.";
+            container.appendChild(empty);
+            return;
+          }
+          mine.forEach(function (r) {
+            var isOwner = r.reporter === RESIDENT_ID;
+            var card = document.createElement("div");
+            card.className = "report-card";
+
+            var top = document.createElement("div");
+            top.className = "report-card-top";
+            var left = document.createElement("div");
+            var ref = document.createElement("div");
+            ref.className = "report-ref";
+            ref.textContent = r.id;
+            var title = document.createElement("div");
+            title.className = "report-title";
+            title.textContent = r.title;
+            var loc = document.createElement("div");
+            loc.className = "report-loc";
+            loc.textContent = r.location + (r.ward ? ", " + r.ward : "");
+            left.appendChild(ref);
+            left.appendChild(title);
+            left.appendChild(loc);
+            if (!isOwner) {
+              var tag = document.createElement("span");
+              tag.className = "card-tag";
+              tag.textContent = "Following";
+              left.appendChild(tag);
+            }
+
+            var pill = document.createElement("span");
+            pill.className = "status-pill";
+            pill.textContent = isMerged(r) ? "Merged" : currentStatus(r);
+            top.appendChild(left);
+            top.appendChild(pill);
+            card.appendChild(top);
+
+            if (isMerged(r)) {
+              var mergeBanner = document.createElement("p");
+              mergeBanner.className = "await-note";
+              mergeBanner.style.marginTop = "10px";
+              mergeBanner.textContent =
+                "This was merged into " +
+                r.mergedInto +
+                ", that's the one being tracked and updated now.";
+              card.appendChild(mergeBanner);
+            }
+
+            var toggle = document.createElement("button");
+            toggle.type = "button";
+            toggle.className = "expand-toggle";
+            var isOpen = !!expanded[r.id];
+            toggle.textContent = isOpen ? "Hide timeline" : "View timeline";
+            toggle.addEventListener("click", function () {
+              expanded[r.id] = !expanded[r.id];
+              render();
+            });
+            card.appendChild(toggle);
+
+            if (isOpen) {
+              card.appendChild(buildTimeline(r, true));
+              renderPhotoEvidence(card, r.photo);
+
+              if (
+                isOwner &&
+                !isMerged(r) &&
+                currentStatus(r) === "Resolved" &&
+                !disputeOpen[r.id]
+              ) {
+                var row = document.createElement("div");
+                row.className = "confirm-row";
+                var confirmBtn = document.createElement("button");
+                confirmBtn.className = "btn-primary";
+                confirmBtn.textContent = "Confirm it's resolved";
+                confirmBtn.addEventListener("click", function () {
+                  r.history.push({ status: "Verified", date: todayStr() });
+                  notifyStatusChange(r, "Verified");
+                  render();
+                });
+                var stillBtn = document.createElement("button");
+                stillBtn.className = "btn-ghost";
+                stillBtn.textContent = "Still a problem";
+                stillBtn.addEventListener("click", function () {
+                  disputeOpen[r.id] = true;
+                  render();
+                });
+                row.appendChild(confirmBtn);
+                row.appendChild(stillBtn);
+                card.appendChild(row);
+              } else if (
+                isOwner &&
+                !isMerged(r) &&
+                currentStatus(r) === "Resolved" &&
+                disputeOpen[r.id]
+              ) {
+                var disputeWrap = document.createElement("div");
+                disputeWrap.className = "dispute-form";
+                var dLabel = document.createElement("label");
+                dLabel.textContent = "What's still wrong?";
+                var dTextarea = document.createElement("textarea");
+                dTextarea.placeholder =
+                  "Tell us what you're still seeing, so the department knows what to check.";
+                var dRow = document.createElement("div");
+                dRow.className = "confirm-row";
+                var dSubmit = document.createElement("button");
+                dSubmit.className = "btn-primary";
+                dSubmit.textContent = "Submit feedback";
+                dSubmit.addEventListener("click", function () {
+                  var text = dTextarea.value.trim();
+                  if (!text) {
+                    dTextarea.focus();
+                    return;
+                  }
+                  r.history.push({
+                    status: "In Progress",
+                    date: todayStr(),
+                    note: "Reopened by resident: " + text,
+                  });
+                  r.notes.push({
+                    text: "Resident disputed resolution: " + text,
+                    date: todayStr(),
+                    author: "resident",
+                  });
+                  notifyStatusChange(r, "In Progress");
+                  delete disputeOpen[r.id];
+                  render();
+                });
+                var dCancel = document.createElement("button");
+                dCancel.className = "btn-ghost";
+                dCancel.textContent = "Cancel";
+                dCancel.addEventListener("click", function () {
+                  delete disputeOpen[r.id];
+                  render();
+                });
+                dRow.appendChild(dSubmit);
+                dRow.appendChild(dCancel);
+                disputeWrap.appendChild(dLabel);
+                disputeWrap.appendChild(dTextarea);
+                disputeWrap.appendChild(dRow);
+                card.appendChild(disputeWrap);
+              }
+
+              if (!isOwner) {
+                var unfollowBtn = document.createElement("button");
+                unfollowBtn.type = "button";
+                unfollowBtn.className = "unfollow-btn";
+                unfollowBtn.textContent = "Unfollow";
+                unfollowBtn.addEventListener("click", function () {
+                  r.followers.splice(r.followers.indexOf(RESIDENT_ID), 1);
+                  render();
+                });
+                card.appendChild(unfollowBtn);
+              }
+            }
+            container.appendChild(card);
+          });
+        }
+
+        // ---------- municipal: stats ----------
+        function renderStats() {
+          var strip = document.getElementById("statStrip");
+          strip.innerHTML = "";
+          var open = reports.filter(function (r) {
+            return !isMerged(r) && currentStatus(r) !== "Verified";
+          }).length;
+          var overdue = reports.filter(function (r) {
+            return !isMerged(r) && isOverdue(r);
+          }).length;
+          var inProgress = reports.filter(function (r) {
+            return !isMerged(r) && currentStatus(r) === "In Progress";
+          }).length;
+          var newThisWeek = reports.filter(function (r) {
+            return !isMerged(r) && daysAgo(r.history[0].date) <= 7;
+          }).length;
+
+          var stats = [
+            { num: open, label: "Open", warn: false },
+            { num: overdue, label: "Overdue", warn: overdue > 0 },
+            { num: inProgress, label: "In progress", warn: false },
+            { num: newThisWeek, label: "New this week", warn: false },
+          ];
+          stats.forEach(function (s) {
+            var box = document.createElement("div");
+            box.className = "stat";
+            var num = document.createElement("div");
+            num.className = "num" + (s.warn ? " warn" : "");
+            num.textContent = s.num;
+            var label = document.createElement("div");
+            label.className = "label";
+            label.textContent = s.label;
+            box.appendChild(num);
+            box.appendChild(label);
+            strip.appendChild(box);
+          });
+        }
+
+        // ---------- municipal: workload breakdown ----------
+        function renderWorkloadList(containerId, counts) {
+          var container = document.getElementById(containerId);
+          container.innerHTML = "";
+          var keys = Object.keys(counts);
+          if (keys.length === 0) {
+            var empty = document.createElement("p");
+            empty.className = "lede";
+            empty.textContent = "Nothing open right now.";
+            container.appendChild(empty);
+            return;
+          }
+          var max = Math.max.apply(
+            null,
+            keys.map(function (k) {
+              return counts[k];
+            }),
+          );
+          keys
+            .sort(function (a, b) {
+              return counts[b] - counts[a];
+            })
+            .forEach(function (key) {
+              var row = document.createElement("div");
+              row.className = "wl-row";
+              var label = document.createElement("div");
+              label.className = "wl-label";
+              label.textContent = key;
+              label.title = key;
+              var track = document.createElement("div");
+              track.className = "wl-track";
+              var fill = document.createElement("div");
+              fill.className = "wl-fill";
+              fill.style.width = Math.round((counts[key] / max) * 100) + "%";
+              track.appendChild(fill);
+              var count = document.createElement("div");
+              count.className = "wl-count";
+              count.textContent = counts[key];
+              row.appendChild(label);
+              row.appendChild(track);
+              row.appendChild(count);
+              container.appendChild(row);
+            });
+        }
+
+        function renderWorkload() {
+          var open = reports.filter(function (r) {
+            return !isMerged(r) && currentStatus(r) !== "Verified";
+          });
+
+          var deptCounts = {};
+          open.forEach(function (r) {
+            deptCounts[r.department] = (deptCounts[r.department] || 0) + 1;
+          });
+          renderWorkloadList("deptBreakdown", deptCounts);
+
+          var wardCounts = {};
+          open.forEach(function (r) {
+            var w = r.ward || "Ward not set";
+            wardCounts[w] = (wardCounts[w] || 0) + 1;
+          });
+          renderWorkloadList("wardBreakdown", wardCounts);
+        }
+
+        // ---------- municipal: filters ----------
+        var filtersBuilt = false;
+        function buildFilters() {
+          if (filtersBuilt) return;
+          filtersBuilt = true;
+          var row = document.getElementById("categoryFilters");
+          var allChip = document.createElement("button");
+          allChip.type = "button";
+          allChip.className = "chip filter selected";
+          allChip.textContent = "All categories";
+          allChip.addEventListener("click", function () {
+            state.filterCategory = "all";
+            Array.prototype.forEach.call(row.children, function (el) {
+              el.classList.remove("selected");
+            });
+            allChip.classList.add("selected");
+            render();
+          });
+          row.appendChild(allChip);
+
+          Object.keys(CATEGORIES).forEach(function (key) {
+            var c = CATEGORIES[key];
+            var chip = document.createElement("button");
+            chip.type = "button";
+            chip.className = "chip filter";
+            var dot = document.createElement("span");
+            dot.className = "dot";
+            dot.style.background = c.color;
+            chip.appendChild(dot);
+            chip.appendChild(document.createTextNode(c.label));
+            chip.addEventListener("click", function () {
+              state.filterCategory = key;
+              Array.prototype.forEach.call(row.children, function (el) {
+                el.classList.remove("selected");
+              });
+              chip.classList.add("selected");
+              render();
+            });
+            row.appendChild(chip);
+          });
+
+          var statusSelect = document.getElementById("statusFilter");
+          STATUS_ORDER.forEach(function (s) {
+            var opt = document.createElement("option");
+            opt.value = s;
+            opt.textContent = s;
+            statusSelect.appendChild(opt);
+          });
+          statusSelect.addEventListener("change", function () {
+            state.filterStatus = this.value;
+            render();
+          });
+        }
+
+        // ---------- municipal: report rows ----------
+        function renderRows() {
+          var container = document.getElementById("reportRows");
+          container.innerHTML = "";
+          var filtered = reports.filter(function (r) {
+            var okCat =
+              state.filterCategory === "all" ||
+              r.category === state.filterCategory;
+            var okStatus =
+              state.filterStatus === "all" ||
+              currentStatus(r) === state.filterStatus;
+            return okCat && okStatus;
+          });
+          if (filtered.length === 0) {
+            var empty = document.createElement("div");
+            empty.style.padding = "20px 16px";
+            empty.style.color = "var(--ink-soft)";
+            empty.textContent = "No reports match this filter.";
+            container.appendChild(empty);
+            return;
+          }
+          filtered.forEach(function (r) {
+            var row = document.createElement("div");
+            row.className = "report-row" + (isMerged(r) ? " merged-row" : "");
+
+            var bar = document.createElement("div");
+            bar.className = "cat-bar";
+            bar.style.background = CATEGORIES[r.category].color;
+            row.appendChild(bar);
+
+            var ref = document.createElement("div");
+            ref.className = "row-ref";
+            ref.textContent = r.id;
+            row.appendChild(ref);
+
+            var locWrap = document.createElement("button");
+            locWrap.type = "button";
+            locWrap.className = "row-btn";
+            var locMain = document.createElement("div");
+            locMain.className = "row-loc";
+            locMain.textContent = r.title;
+            var locSub = document.createElement("span");
+            locSub.className = "row-sub";
+            locSub.textContent =
+              r.location +
+              (r.ward ? ", " + r.ward : "") +
+              (affectedCount(r) > 0
+                ? ", " + affectedCount(r) + " other residents affected"
+                : "");
+            locMain.appendChild(locSub);
+            locWrap.appendChild(locMain);
+            locWrap.addEventListener("click", function () {
+              openDetail(r.id);
+            });
+            row.appendChild(locWrap);
+
+            var pill = document.createElement("span");
+            pill.className = "status-pill";
+            pill.textContent = isMerged(r) ? "Merged" : currentStatus(r);
+            if (isMerged(r)) {
+              pill.title = "Merged into " + r.mergedInto;
+            }
+            row.appendChild(pill);
+
+            var priority = document.createElement("span");
+            priority.className = "row-priority";
+            priority.textContent = r.priority;
+            row.appendChild(priority);
+
+            var age = document.createElement("span");
+            age.textContent = daysAgo(r.history[0].date) + "d";
+            if (isOverdue(r)) {
+              age.classList.add("age-overdue");
+              age.title =
+                "Past the " +
+                TARGET_DAYS[r.category] +
+                "-day target for " +
+                CATEGORIES[r.category].label.toLowerCase() +
+                " issues";
+            }
+            row.appendChild(age);
+
+            row.addEventListener("click", function (e) {
+              if (e.target === locWrap || locWrap.contains(e.target)) return;
+              openDetail(r.id);
+            });
+
+            container.appendChild(row);
+          });
+        }
+
+        // ---------- detail panel ----------
+        var overlay = document.getElementById("detailOverlay");
+        var panel = document.getElementById("detailPanel");
+        var lastFocusedBeforeDetail = null;
+
+        function openDetail(id) {
+          state.detailId = id;
+          lastFocusedBeforeDetail = document.activeElement;
+          overlay.classList.add("show");
+          overlay.removeAttribute("inert");
+          renderDetail();
+          var closeBtn = panel.querySelector(".detail-close");
+          if (closeBtn) closeBtn.focus();
+        }
+        function closeDetail() {
+          overlay.classList.remove("show");
+          overlay.setAttribute("inert", "");
+          state.detailId = null;
+          if (
+            lastFocusedBeforeDetail &&
+            typeof lastFocusedBeforeDetail.focus === "function"
+          ) {
+            lastFocusedBeforeDetail.focus();
+          }
+        }
+        overlay.addEventListener("click", function (e) {
+          if (e.target === overlay) closeDetail();
+        });
+        overlay.addEventListener("keydown", function (e) {
+          if (!overlay.classList.contains("show")) return;
+          if (e.key === "Escape") {
+            closeDetail();
+            return;
+          }
+          if (e.key !== "Tab") return;
+          var focusable = Array.prototype.slice
+            .call(
+              panel.querySelectorAll(
+                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+              ),
+            )
+            .filter(function (el) {
+              return !el.disabled;
+            });
+          if (focusable.length === 0) return;
+          var first = focusable[0],
+            last = focusable[focusable.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        });
+
+        function renderDetail() {
+          var r = reports.filter(function (x) {
+            return x.id === state.detailId;
+          })[0];
+          if (!r) return;
+          panel.innerHTML = "";
+
+          var closeBtn = document.createElement("button");
+          closeBtn.className = "detail-close";
+          closeBtn.innerHTML = "&times;";
+          closeBtn.setAttribute("aria-label", "Close report details");
+          closeBtn.addEventListener("click", closeDetail);
+          panel.appendChild(closeBtn);
+
+          var head = document.createElement("div");
+          head.className = "detail-head";
+          var refEl = document.createElement("div");
+          refEl.className = "report-ref";
+          refEl.textContent = r.id;
+          var titleEl = document.createElement("h3");
+          titleEl.textContent = r.title;
+          var locEl = document.createElement("div");
+          locEl.className = "report-loc";
+          locEl.textContent = r.location + (r.ward ? ", " + r.ward : "");
+          var descEl = document.createElement("p");
+          descEl.className = "lede";
+          descEl.style.marginTop = "8px";
+          descEl.textContent = r.description;
+          head.appendChild(refEl);
+          head.appendChild(titleEl);
+          head.appendChild(locEl);
+          head.appendChild(descEl);
+          renderPhotoEvidence(head, r.photo);
+          if (affectedCount(r) > 0) {
+            var linked = document.createElement("p");
+            linked.className = "await-note";
+            linked.textContent =
+              affectedCount(r) +
+              " other residents affected" +
+              (r.followers.length > 0
+                ? " (" +
+                  r.followers.length +
+                  " following, " +
+                  r.linkedResidents +
+                  " reported it directly)."
+                : ".");
+            head.appendChild(linked);
+          }
+          var target = TARGET_DAYS[r.category];
+          var resolvedEntry = r.history
+            .filter(function (h) {
+              return h.status === "Resolved";
+            })
+            .pop();
+          var ageNote = document.createElement("p");
+          var ageNoteText;
+          if (resolvedEntry) {
+            var tookDays =
+              daysAgo(r.history[0].date) - daysAgo(resolvedEntry.date);
+            ageNoteText =
+              "Resolved in " +
+              tookDays +
+              " day" +
+              (tookDays === 1 ? "" : "s") +
+              ", target for " +
+              CATEGORIES[r.category].label.toLowerCase() +
+              " issues is " +
+              target +
+              " days.";
+            ageNote.className =
+              "await-note" + (tookDays > target ? " age-overdue-note" : "");
+          } else {
+            var ageInDays = daysAgo(r.history[0].date);
+            ageNoteText =
+              "Open " +
+              ageInDays +
+              " day" +
+              (ageInDays === 1 ? "" : "s") +
+              ", target for " +
+              CATEGORIES[r.category].label.toLowerCase() +
+              " issues is " +
+              target +
+              " days" +
+              (isOverdue(r) ? ". Past target." : ".");
+            ageNote.className =
+              "await-note" + (isOverdue(r) ? " age-overdue-note" : "");
+          }
+          ageNote.textContent = ageNoteText;
+          head.appendChild(ageNote);
+          panel.appendChild(head);
+
+          panel.appendChild(buildTimeline(r, true));
+
+          // department + owner + priority
+          var meta = document.createElement("div");
+          meta.className = "detail-sec";
+          var deptLabel = document.createElement("label");
+          deptLabel.textContent = "Department";
+          var deptSelect = document.createElement("select");
+          DEPARTMENTS.forEach(function (dep) {
+            var opt = document.createElement("option");
+            opt.value = dep;
+            opt.textContent = dep;
+            if (dep === r.department) opt.selected = true;
+            deptSelect.appendChild(opt);
+          });
+          deptSelect.addEventListener("change", function () {
+            r.department = this.value;
+            renderOwnerLine();
+          });
+
+          var ownerLabel = document.createElement("label");
+          ownerLabel.textContent = "Assigned to";
+          var ownerInput = document.createElement("input");
+          ownerInput.type = "text";
+          ownerInput.placeholder = "Name of the person or team on this";
+          ownerInput.value = r.assignedTo || "";
+          ownerInput.addEventListener("input", function () {
+            r.assignedTo = this.value;
+            renderOwnerLine();
+          });
+
+          var prLabel = document.createElement("label");
+          prLabel.textContent = "Priority";
+          var prSelect = document.createElement("select");
+          ["Low", "Medium", "High"].forEach(function (p) {
+            var opt = document.createElement("option");
+            opt.value = p;
+            opt.textContent = p;
+            if (p === r.priority) opt.selected = true;
+            prSelect.appendChild(opt);
+          });
+          prSelect.addEventListener("change", function () {
+            r.priority = this.value;
+            render();
+          });
+
+          var ownerLine = document.createElement("p");
+          ownerLine.className = "await-note";
+          function renderOwnerLine() {
+            ownerLine.textContent =
+              "Currently owned by " +
+              deptSelect.value +
+              (ownerInput.value.trim()
+                ? ", " + ownerInput.value.trim() + "."
+                : ". No one named yet.");
+          }
+          renderOwnerLine();
+
+          meta.appendChild(ownerLine);
+          meta.appendChild(deptLabel);
+          meta.appendChild(deptSelect);
+          meta.appendChild(ownerLabel);
+          meta.appendChild(ownerInput);
+          meta.appendChild(prLabel);
+          meta.appendChild(prSelect);
+          panel.appendChild(meta);
+
+          // action
+          var actionSec = document.createElement("div");
+          actionSec.className = "detail-sec";
+          var status = currentStatus(r);
+          if (isMerged(r)) {
+            var mergedActionNote = document.createElement("p");
+            mergedActionNote.className = "await-note";
+            mergedActionNote.textContent =
+              "This report is merged into " +
+              r.mergedInto +
+              ". Manage status from that report instead.";
+            actionSec.appendChild(mergedActionNote);
+          } else if (status === "In Progress") {
+            var resLabel = document.createElement("label");
+            resLabel.textContent = "What was done to fix it?";
+            var resTextarea = document.createElement("textarea");
+            resTextarea.placeholder =
+              "Describe the work completed, this becomes part of the record and is what the resident sees.";
+            resTextarea.rows = 3;
+            resTextarea.addEventListener("input", function () {
+              this.classList.remove("invalid");
+            });
+            var resBtn = document.createElement("button");
+            resBtn.className = "action-btn";
+            resBtn.textContent = "Mark resolved";
+            resBtn.addEventListener("click", function () {
+              var text = resTextarea.value.trim();
+              if (!text) {
+                resTextarea.classList.add("invalid");
+                resTextarea.focus();
+                return;
+              }
+              r.history.push({
+                status: "Resolved",
+                date: todayStr(),
+                note: text,
+              });
+              r.notes.push({
+                text: "Resolution: " + text,
+                date: todayStr(),
+                author: "staff",
+              });
+              notifyStatusChange(r, "Resolved");
+              render();
+              renderDetail();
+            });
+            actionSec.appendChild(resLabel);
+            actionSec.appendChild(resTextarea);
+            actionSec.appendChild(resBtn);
+          } else if (NEXT_ACTION_LABEL[status]) {
+            var actionBtn = document.createElement("button");
+            actionBtn.className = "action-btn";
+            actionBtn.textContent = NEXT_ACTION_LABEL[status];
+            actionBtn.addEventListener("click", function () {
+              var nextIdx = STATUS_ORDER.indexOf(status) + 1;
+              var nextStatus = STATUS_ORDER[nextIdx];
+              var entry = { status: nextStatus, date: todayStr() };
+              if (nextStatus === "Assigned") {
+                entry.note =
+                  deptSelect.value +
+                  (ownerInput.value.trim()
+                    ? ", assigned to " + ownerInput.value.trim()
+                    : "");
+              }
+              r.history.push(entry);
+              notifyStatusChange(r, nextStatus);
+              render();
+              renderDetail();
+            });
+            actionSec.appendChild(actionBtn);
+          } else if (status === "Resolved") {
+            var await1 = document.createElement("p");
+            await1.className = "await-note";
+            await1.textContent =
+              "Marked resolved. Waiting for the resident to confirm the fix.";
+            actionSec.appendChild(await1);
+          } else if (status === "Verified") {
+            var done = document.createElement("p");
+            done.className = "await-note";
+            done.textContent =
+              "Closed. The resident confirmed this was resolved.";
+            actionSec.appendChild(done);
+          }
+          panel.appendChild(actionSec);
+
+          // duplicate / merge
+          var mergeSec = document.createElement("div");
+          mergeSec.className = "detail-sec";
+          if (isMerged(r)) {
+            var mergeTargetReport = findReport(r.mergedInto);
+            var mergedLabel = document.createElement("label");
+            mergedLabel.textContent = "Duplicate status";
+            var mergedNote = document.createElement("p");
+            mergedNote.className = "await-note";
+            mergedNote.textContent =
+              "Merged into " +
+              r.mergedInto +
+              (mergeTargetReport ? ", " + mergeTargetReport.title : "") +
+              ". Its report count and followers moved there.";
+            var unmergeBtn = document.createElement("button");
+            unmergeBtn.className = "action-btn";
+            unmergeBtn.style.background = "var(--ink-soft)";
+            unmergeBtn.textContent = "Undo merge";
+            unmergeBtn.addEventListener("click", function () {
+              if (mergeTargetReport) {
+                mergeTargetReport.linkedResidents = Math.max(
+                  0,
+                  mergeTargetReport.linkedResidents - 1,
+                );
+              }
+              r.mergedInto = null;
+              render();
+              renderDetail();
+            });
+            mergeSec.appendChild(mergedLabel);
+            mergeSec.appendChild(mergedNote);
+            mergeSec.appendChild(unmergeBtn);
+          } else {
+            var mergeLabel = document.createElement("label");
+            mergeLabel.textContent =
+              "Is this a duplicate of another open issue?";
+            var mergeSearch = document.createElement("input");
+            mergeSearch.type = "text";
+            mergeSearch.placeholder = "Search by title or location";
+            var mergeResults = document.createElement("div");
+
+            function renderMergeResults() {
+              var q = mergeSearch.value.trim().toLowerCase();
+              mergeResults.innerHTML = "";
+              if (q.length < 2) return;
+              var candidates = reports
+                .filter(function (x) {
+                  if (x.id === r.id) return false;
+                  if (isMerged(x)) return false;
+                  if (currentStatus(x) === "Verified") return false;
+                  var hay = (
+                    x.title +
+                    " " +
+                    x.location +
+                    " " +
+                    x.ward +
+                    " " +
+                    CATEGORIES[x.category].label
+                  ).toLowerCase();
+                  return hay.indexOf(q) !== -1;
+                })
+                .slice(0, 5);
+              if (candidates.length === 0) {
+                var none = document.createElement("div");
+                none.className = "search-hint";
+                none.textContent = "No matching open issues.";
+                mergeResults.appendChild(none);
+                return;
+              }
+              candidates.forEach(function (c) {
+                var row = document.createElement("div");
+                row.className = "search-result";
+                var info = document.createElement("div");
+                info.className = "sr-info";
+                var dot = document.createElement("span");
+                dot.className = "sr-dot";
+                dot.style.background = CATEGORIES[c.category].color;
+                var text = document.createElement("div");
+                text.className = "sr-text";
+                var title = document.createElement("div");
+                title.className = "sr-title";
+                title.textContent = c.title;
+                var loc = document.createElement("div");
+                loc.className = "sr-loc";
+                loc.textContent =
+                  c.id + ", " + c.location + (c.ward ? ", " + c.ward : "");
+                text.appendChild(title);
+                text.appendChild(loc);
+                info.appendChild(dot);
+                info.appendChild(text);
+                row.appendChild(info);
+
+                var mergeBtn = document.createElement("button");
+                mergeBtn.type = "button";
+                mergeBtn.textContent = "Merge into this";
+                mergeBtn.addEventListener("click", function () {
+                  r.mergedInto = c.id;
+                  c.linkedResidents += 1;
+                  r.followers.forEach(function (f) {
+                    if (c.followers.indexOf(f) === -1) c.followers.push(f);
+                  });
+                  c.notes.push({
+                    text:
+                      "Merged " +
+                      r.id +
+                      ' ("' +
+                      r.title +
+                      '") into this issue.',
+                    date: todayStr(),
+                    author: "staff",
+                  });
+                  render();
+                  renderDetail();
+                });
+                row.appendChild(mergeBtn);
+                mergeResults.appendChild(row);
+              });
+            }
+            mergeSearch.addEventListener("input", renderMergeResults);
+            mergeSec.appendChild(mergeLabel);
+            mergeSec.appendChild(mergeSearch);
+            mergeSec.appendChild(mergeResults);
+          }
+          panel.appendChild(mergeSec);
+
+          // notes
+          var noteSec = document.createElement("div");
+          noteSec.className = "detail-sec";
+          var noteLabel = document.createElement("label");
+          noteLabel.textContent = "Internal notes";
+          noteSec.appendChild(noteLabel);
+          r.notes
+            .slice()
+            .reverse()
+            .forEach(function (n) {
+              var item = document.createElement("div");
+              item.className = "note-item";
+              var head = document.createElement("div");
+              head.className = "note-head";
+              var authorTag = document.createElement("span");
+              var isStaffNote = n.author !== "resident";
+              authorTag.className =
+                "note-author " + (isStaffNote ? "staff" : "resident");
+              authorTag.textContent = isStaffNote ? "Staff" : "Resident";
+              var dateEl = document.createElement("span");
+              dateEl.className = "note-date";
+              dateEl.textContent = fmtDate(n.date);
+              head.appendChild(authorTag);
+              head.appendChild(dateEl);
+              var textEl = document.createElement("div");
+              textEl.textContent = n.text;
+              item.appendChild(head);
+              item.appendChild(textEl);
+              noteSec.appendChild(item);
+            });
+          var noteInput = document.createElement("textarea");
+          noteInput.placeholder = "Add a note for other staff...";
+          noteInput.rows = 2;
+          var saveNoteBtn = document.createElement("button");
+          saveNoteBtn.className = "action-btn";
+          saveNoteBtn.style.background = "var(--ink-soft)";
+          saveNoteBtn.textContent = "Save note";
+          saveNoteBtn.addEventListener("click", function () {
+            if (!noteInput.value.trim()) return;
+            r.notes.push({
+              text: noteInput.value.trim(),
+              date: todayStr(),
+              author: "staff",
+            });
+            renderDetail();
+          });
+          noteSec.appendChild(noteInput);
+          noteSec.appendChild(saveNoteBtn);
+          panel.appendChild(noteSec);
+        }
+
+        // ---------- public: breakdown + list ----------
+        function renderPublicBreakdown() {
+          var open = reports.filter(function (r) {
+            return !isMerged(r) && currentStatus(r) !== "Verified";
+          });
+          var totalEl = document.getElementById("publicTotal");
+          totalEl.innerHTML = "";
+          totalEl.appendChild(document.createTextNode(open.length));
+          var unit = document.createElement("span");
+          unit.className = "unit";
+          unit.textContent =
+            "open issue" + (open.length === 1 ? "" : "s") + " right now";
+          totalEl.appendChild(unit);
+
+          var counts = {};
+          open.forEach(function (r) {
+            counts[r.category] = (counts[r.category] || 0) + 1;
+          });
+          var breakdown = document.getElementById("publicBreakdown");
+          breakdown.innerHTML = "";
+          Object.keys(counts)
+            .sort(function (a, b) {
+              return counts[b] - counts[a];
+            })
+            .forEach(function (key) {
+              var item = document.createElement("div");
+              item.className = "pb-item";
+              var dot = document.createElement("span");
+              dot.className = "pb-dot";
+              dot.style.background = CATEGORIES[key].color;
+              var num = document.createElement("span");
+              num.className = "pb-num";
+              num.textContent = counts[key];
+              var label = document.createElement("span");
+              label.className = "pb-label";
+              label.textContent = CATEGORIES[key].label;
+              item.appendChild(dot);
+              item.appendChild(num);
+              item.appendChild(label);
+              breakdown.appendChild(item);
+            });
+        }
+
+        var publicFiltersBuilt = false;
+        function buildPublicFilters() {
+          if (publicFiltersBuilt) return;
+          publicFiltersBuilt = true;
+          var row = document.getElementById("publicCategoryFilters");
+          var allChip = document.createElement("button");
+          allChip.type = "button";
+          allChip.className = "chip filter selected";
+          allChip.textContent = "All categories";
+          allChip.addEventListener("click", function () {
+            state.publicFilterCategory = "all";
+            Array.prototype.forEach.call(row.children, function (el) {
+              el.classList.remove("selected");
+            });
+            allChip.classList.add("selected");
+            renderPublicList();
+          });
+          row.appendChild(allChip);
+
+          Object.keys(CATEGORIES).forEach(function (key) {
+            var c = CATEGORIES[key];
+            var chip = document.createElement("button");
+            chip.type = "button";
+            chip.className = "chip filter";
+            var dot = document.createElement("span");
+            dot.className = "dot";
+            dot.style.background = c.color;
+            chip.appendChild(dot);
+            chip.appendChild(document.createTextNode(c.label));
+            chip.addEventListener("click", function () {
+              state.publicFilterCategory = key;
+              Array.prototype.forEach.call(row.children, function (el) {
+                el.classList.remove("selected");
+              });
+              chip.classList.add("selected");
+              renderPublicList();
+            });
+            row.appendChild(chip);
+          });
+        }
+
+        function renderPublicList() {
+          var container = document.getElementById("publicList");
+          container.innerHTML = "";
+          var open = reports.filter(function (r) {
+            var okCat =
+              state.publicFilterCategory === "all" ||
+              r.category === state.publicFilterCategory;
+            return okCat && !isMerged(r) && currentStatus(r) !== "Verified";
+          });
+          if (open.length === 0) {
+            var empty = document.createElement("p");
+            empty.className = "lede";
+            empty.textContent = "Nothing open in this category right now.";
+            container.appendChild(empty);
+            return;
+          }
+          open.forEach(function (r) {
+            var card = document.createElement("div");
+            card.className = "report-card";
+
+            var top = document.createElement("div");
+            top.className = "report-card-top";
+            var left = document.createElement("div");
+            var refEl = document.createElement("div");
+            refEl.className = "report-ref";
+            refEl.textContent = r.id;
+            var titleEl = document.createElement("div");
+            titleEl.className = "report-title";
+            titleEl.textContent = r.title;
+            var locEl = document.createElement("div");
+            locEl.className = "report-loc";
+            locEl.textContent = r.location + (r.ward ? ", " + r.ward : "");
+            left.appendChild(refEl);
+            left.appendChild(titleEl);
+            left.appendChild(locEl);
+
+            var pill = document.createElement("span");
+            pill.className = "status-pill";
+            pill.textContent = currentStatus(r);
+            top.appendChild(left);
+            top.appendChild(pill);
+            card.appendChild(top);
+
+            var foot = document.createElement("div");
+            foot.className = "public-card-foot";
+            var meta = document.createElement("div");
+            meta.className = "pcf-meta";
+            meta.textContent =
+              r.priority +
+              " priority" +
+              (affectedCount(r) > 0
+                ? " · " + affectedCount(r) + " other residents affected"
+                : "");
+            foot.appendChild(meta);
+
+            var btn = document.createElement("button");
+            btn.type = "button";
+            if (r.reporter === RESIDENT_ID) {
+              btn.textContent = "Your report";
+              btn.disabled = true;
+            } else if (isFollowing(r)) {
+              btn.textContent = "Following";
+              btn.classList.add("following");
+              btn.addEventListener("click", function () {
+                r.followers.splice(r.followers.indexOf(RESIDENT_ID), 1);
+                render();
+              });
+            } else {
+              btn.textContent = "Follow this issue";
+              btn.addEventListener("click", function () {
+                r.followers.push(RESIDENT_ID);
+                render();
+              });
+            }
+            foot.appendChild(btn);
+            card.appendChild(foot);
+            container.appendChild(card);
+          });
+        }
+
+        // ---------- generic segmented-switch thumb ----------
+        function positionThumb(switchEl, btn) {
+          if (!btn) return;
+          var thumb = switchEl.querySelector(".mode-thumb");
+          thumb.style.width = btn.offsetWidth + "px";
+          thumb.style.left = btn.offsetLeft + "px";
+        }
+
+        // ---------- main mode switch ----------
+        var modeSwitch = document.getElementById("modeSwitch");
+        function activateMode(modeName) {
+          state.mode = modeName;
+          modeSwitch.dataset.mode = modeName;
+          modeSwitch.querySelectorAll(".mode-btn").forEach(function (b) {
+            b.classList.remove("active");
+          });
+          var targetBtn = modeSwitch.querySelector(
+            '[data-mode="' + modeName + '"]',
+          );
+          targetBtn.classList.add("active");
+          document
+            .getElementById("view-resident")
+            .classList.toggle("active", modeName === "resident");
+          document
+            .getElementById("view-public")
+            .classList.toggle("active", modeName === "public");
+          document
+            .getElementById("view-municipal")
+            .classList.toggle("active", modeName === "municipal");
+          positionThumb(modeSwitch, targetBtn);
+        }
+        modeSwitch.querySelectorAll(".mode-btn").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            activateMode(this.dataset.mode);
+            render();
+          });
+        });
+        window.addEventListener("resize", function () {
+          positionThumb(
+            modeSwitch,
+            modeSwitch.querySelector(".mode-btn.active"),
+          );
+          positionThumb(
+            roleSwitch,
+            roleSwitch.querySelector(".mode-btn.active"),
+          );
+        });
+
+        // ---------- auth ----------
+        var authState = { loggedIn: false, role: null, name: null };
+        var authScreen = document.getElementById("authScreen");
+        var mainApp = document.getElementById("mainApp");
+        var roleSwitch = document.getElementById("roleSwitch");
+        var currentAuthRole = "resident";
+
+        var signupDeptSelect = document.getElementById("signupDept");
+        DEPARTMENTS.forEach(function (dep) {
+          var opt = document.createElement("option");
+          opt.value = dep;
+          opt.textContent = dep;
+          signupDeptSelect.appendChild(opt);
+        });
+
+        function updateAuthCopyForRole() {
+          var isMunicipal = currentAuthRole === "municipal";
+          document.getElementById("loginSubmitBtn").textContent = isMunicipal
+            ? "Log in as municipal staff"
+            : "Log in as resident";
+          document.getElementById("signupSubmitBtn").textContent = isMunicipal
+            ? "Request staff access"
+            : "Create resident account";
+          document.getElementById("signupTabBtn").textContent = isMunicipal
+            ? "Request staff access"
+            : "Create account";
+          document
+            .getElementById("signupDeptField")
+            .classList.toggle("hidden", !isMunicipal);
+          document
+            .getElementById("signupIdField")
+            .classList.toggle("hidden", !isMunicipal);
+          document
+            .getElementById("signupMunicipalNote")
+            .classList.toggle("hidden", !isMunicipal);
+          document.getElementById("signupEmailLabel").textContent = isMunicipal
+            ? "Work email"
+            : "Email";
+          document.getElementById("signupStaffId").required = isMunicipal;
+        }
+
+        roleSwitch.querySelectorAll(".mode-btn").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            currentAuthRole = this.dataset.role;
+            roleSwitch.querySelectorAll(".mode-btn").forEach(function (b) {
+              b.classList.remove("active");
+            });
+            this.classList.add("active");
+            positionThumb(roleSwitch, this);
+            updateAuthCopyForRole();
+          });
+        });
+
+        var authTabs = document.getElementById("authTabs");
+        authTabs.querySelectorAll(".auth-tab").forEach(function (tab) {
+          tab.addEventListener("click", function () {
+            authTabs.querySelectorAll(".auth-tab").forEach(function (t) {
+              t.classList.remove("active");
+            });
+            this.classList.add("active");
+            var isLogin = this.dataset.tab === "login";
+            document
+              .getElementById("loginForm")
+              .classList.toggle("hidden", !isLogin);
+            document
+              .getElementById("signupForm")
+              .classList.toggle("hidden", isLogin);
+            var firstField = isLogin
+              ? document.getElementById("loginEmail")
+              : document.getElementById("signupName");
+            if (firstField) firstField.focus();
+          });
+        });
+
+        function titleCase(s) {
+          return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        function completeAuth(role, name) {
+          authState.loggedIn = true;
+          authState.role = role;
+          authState.name = name;
+          enterApp();
+        }
+
+        document
+          .getElementById("loginForm")
+          .addEventListener("submit", function (e) {
+            e.preventDefault();
+            var email = document.getElementById("loginEmail").value.trim();
+            var guess =
+              email.split("@")[0].replace(/[._]/g, " ") ||
+              (currentAuthRole === "municipal" ? "Staff member" : "Resident");
+            completeAuth(currentAuthRole, titleCase(guess));
+          });
+
+        document
+          .getElementById("signupForm")
+          .addEventListener("submit", function (e) {
+            e.preventDefault();
+            var name =
+              document.getElementById("signupName").value.trim() ||
+              (currentAuthRole === "municipal" ? "Staff member" : "Resident");
+            completeAuth(currentAuthRole, name);
+          });
+
+        document
+          .getElementById("guestLink")
+          .addEventListener("click", function () {
+            authState.loggedIn = false;
+            authState.role = "guest";
+            authState.name = null;
+            enterApp();
+          });
+
+        document
+          .getElementById("logoutBtn")
+          .addEventListener("click", function () {
+            authState.loggedIn = false;
+            authState.role = null;
+            authState.name = null;
+            mainApp.classList.add("hidden");
+            authScreen.classList.remove("hidden");
+          });
+
+        function enterApp() {
+          authScreen.classList.add("hidden");
+          mainApp.classList.remove("hidden");
+
+          var residentBtn = modeSwitch.querySelector('[data-mode="resident"]');
+          var municipalBtn = modeSwitch.querySelector(
+            '[data-mode="municipal"]',
+          );
+          var publicBtn = modeSwitch.querySelector('[data-mode="public"]');
+          residentBtn.classList.toggle("hidden", authState.role !== "resident");
+          municipalBtn.classList.toggle(
+            "hidden",
+            authState.role !== "municipal",
+          );
+          publicBtn.classList.remove("hidden");
+
+          var statusName = document.getElementById("authStatusName");
+          if (authState.loggedIn) {
+            statusName.textContent =
+              "Signed in as " +
+              authState.name +
+              (authState.role === "municipal" ? " (staff)" : "");
+          } else {
+            statusName.textContent = "Browsing as guest";
+          }
+
+          var startMode =
+            authState.role === "municipal"
+              ? "municipal"
+              : authState.role === "resident"
+                ? "resident"
+                : "public";
+          activateMode(startMode);
+          render();
+        }
+
+        // ---------- master render ----------
+        function render() {
+          renderMyReports();
+          renderStats();
+          renderWorkload();
+          buildFilters();
+          renderRows();
+          if (state.detailId) renderDetail();
+          renderSearchResults();
+          renderPublicBreakdown();
+          buildPublicFilters();
+          renderPublicList();
+        }
+
+        positionThumb(roleSwitch, roleSwitch.querySelector(".mode-btn.active"));
+        updateAuthCopyForRole();
+      })();
+    </script>
+  </body>
+</html>
